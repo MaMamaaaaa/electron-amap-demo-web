@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electron高德地图3D足迹</title>
+    <style>
+        html, body, #container {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        .footprint {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23ff5722" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,10.5A1.5,1.5 0 0,0 10.5,12A1.5,1.5 0 0,0 12,13.5A1.5,1.5 0 0,0 13.5,12A1.5,1.5 0 0,0 12,10.5M7.5,10.5A1.5,1.5 0 0,0 6,12A1.5,1.5 0 0,0 7.5,13.5A1.5,1.5 0 0,0 9,12A1.5,1.5 0 0,0 7.5,10.5M16.5,10.5A1.5,1.5 0 0,0 15,12A1.5,1.5 0 0,0 16.5,13.5A1.5,1.5 0 0,0 18,12A1.5,1.5 0 0,0 16.5,10.5Z"/></svg>');
+            background-size: contain;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 1000;
+            animation: bounce 1s infinite alternate;
+        }
+        @keyframes bounce {
+            from { transform: translate(-50%, -50%) scale(1); }
+            to { transform: translate(-50%, -70%) scale(1.2); }
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+<script src="https://webapi.amap.com/maps?v=2.0&key=43408e8dcea507e14689d41b782082f5"></script>
+<script src="https://webapi.amap.com/ui/1.1/main.js"></script>
+<script>
+    // 初始化地图
+    const map = new AMap.Map('container', {
+        zoom: 15,
+        center: [116.397428, 39.90923],
+        pitch: 60,  // 3D视角倾斜角度
+        viewMode: '3D'  // 开启3D视图
+    })
+
+    // 添加3D建筑图层
+    AMap.plugin(['AMap.Buildings'], () => {
+        const buildings = new AMap.Buildings({
+            zooms: [15, 18],
+            heightFactor: 2,  // 建筑高度放大系数
+            opacity: 0.9
+        })
+        map.add(buildings)
+    })
+
+    // 足迹数组
+    const footprints = []
+
+    // 点击地图添加3D小人足迹
+    map.on('click', (e) => {
+        const lnglat = e.lnglat
+
+        // 创建足迹元素
+        const footprint = document.createElement('div')
+        footprint.className = 'footprint'
+
+        // 将足迹添加到地图容器
+        document.getElementById('container').appendChild(footprint)
+
+        // 将经纬度坐标转换为屏幕坐标
+        const pixel = map.lngLatToContainer(lnglat)
+        footprint.style.left = `${pixel.x}px`
+        footprint.style.top = `${pixel.y}px`
+
+        // 保存足迹信息
+        footprints.push({
+            element: footprint,
+            lnglat: lnglat
+        })
+
+        // 5秒后淡出并移除足迹
+        setTimeout(() => {
+            footprint.style.transition = 'opacity 1s';
+            footprint.style.opacity = '0';
+            setTimeout(() => {
+                footprint.remove()
+                const index = footprints.findIndex(f => f.element === footprint)
+                if (index !== -1) footprints.splice(index, 1)
+            }, 1000)
+        }, 5000)
+
+        // 添加标记点
+        addMarker(lnglat)
+    })
+
+    // 添加3D标记点
+    function addMarker(lnglat) {
+        AMapUI.loadUI(['overlay/SimpleMarker'], (SimpleMarker) => {
+            const marker = new SimpleMarker({
+                iconLabel: '👤',  // 使用emoji作为小人
+                iconStyle: 'red',
+                map: map,
+                position: lnglat,
+                zIndex: 100,
+                labelStyle: {
+                    fontSize: '24px'
+                },
+                showPositionPoint: true
+            })
+
+            // 3秒后移除标记
+            setTimeout(() => {
+                marker.setMap(null)
+            }, 3000)
+        })
+    }
+
+    // 地图移动时更新足迹位置
+    map.on('movestart', () => {
+        footprints.forEach(footprint => {
+            footprint.element.style.display = 'none'
+        })
+    })
+
+    map.on('moveend', () => {
+        footprints.forEach(footprint => {
+            const pixel = map.lngLatToContainer(footprint.lnglat)
+            footprint.element.style.left = `${pixel.x}px`
+            footprint.element.style.top = `${pixel.y}px`
+            footprint.element.style.display = 'block'
+        })
+    })
+</script>
+</body>
+</html>
