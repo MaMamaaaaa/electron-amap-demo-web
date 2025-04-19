@@ -7,12 +7,21 @@
     "build": "electron-builder"
   },
   "devDependencies": {
-    "electron": "^24.8.8"
+    "electron": "^24.8.8",
+    "electron-builder": "^26.0.12"
   },
   "dependencies": {
     "three": "^0.175.0"
   },
   "author": "",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MaMamaaaaa/electron-amap-demo-web.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MaMamaaaaa/electron-amap-demo-web/issues"
+  },
+  "homepage": "https://github.com/MaMamaaaaa/electron-amap-demo-web#readme",
   "description": ""
 }
